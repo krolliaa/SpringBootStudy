@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: SpringBootStudy-Test
+server:
+  port: 8082
+  servlet:
+    context-path: /
