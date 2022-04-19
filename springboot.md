@@ -612,24 +612,116 @@ public class SpringBootController2 {
 ]
 ```
 
+`IDEA`从`github`上拉取项目遇到的一些问题：一是`pom.xml`需要重新加载一下，二是找不到主加载类的问题需要`clean`一下然后重新`install`最后`rebuild project`，三是没有加载进`resources`的资源到`target`中，要使用`ctrl + alt + shift + s`将其设定为`resources`目录
+
 ## 4.`SpringBoot`集成`Transaction`
+
+添加事务支持是为了防止程序异常但是更改了数据库里的数据所以要做事务管理，只需要在`service`层加上`@Transactional`就可以了，或者在`SpringBootAoolication.java`上加上`@EnableTransactionManagement`注解即可
+
+```java
+package com.zwm.springbootstudy.service;
+
+import com.zwm.springbootstudy.mapper.StudentMapper;
+import com.zwm.springbootstudy.pojo.Student;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+public class StudentService {
+
+    @Autowired
+    private StudentMapper studentMapper;
+
+    @Transactional
+    public List<Student> getAllStudents() {
+        return studentMapper.selectAllStudents();
+    }
+}
+```
+
+```java
+package com.zwm.springbootstudy;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+
+@SpringBootApplication
+@EnableTransactionManagement
+public class SpringBootStudyApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(SpringBootStudyApplication.class, args);
+    }
+}
+```
 
 ## 5.`SpringBoot`集成`SpringMVC`
 
+`SpringBoot`将`@Controller`和`@ResponseBody`结合在一块形成了`@RestController`，这是一个类注解，如果在一个类上加上这个注解代表给每一个方法都添加了`@ResponseBody`注解：
+
+```java
+package com.zwm.springbootstudy.controller;
+
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController(value = "springBootController3")
+@RequestMapping(value = "/springboot", method = RequestMethod.GET)
+public class SpringBootController3 {
+    @RequestMapping(value = "/some1.do")
+    public String doSome1() {
+        return "SpringBoot doSome1 @RestController";
+    }
+
+    @RequestMapping(value = "/some2.do")
+    public String doSome2() {
+        return "SpringBoot doSome2 @RestController";
+    }
+
+    @RequestMapping(value = "/some3.do")
+    public String doSome3() {
+        return "SpringBoot doSome3 @RestController";
+    }
+}
+```
+
+除此之外，如果指定`@RequestMapping()`中的`method`属性可以直接使用：`@GetMapping(value = "")`，同理还有`@PostMapping @DeleteMapping @PutMapping`，这是`Restful`的查询方式，分别对应着：查询数据、添加数据、删除数据、修改数据，关于`Restful`会在第六节中提到
+
 ## 6.`SpringBoot`集成`Restful`
+
+
 
 ## 7.`SpringBoot`集成`Redis`
 
+
+
 ## 8.`SpringBoot`集成`Dubbo`
+
+
 
 ## 9.`SpringBoot`与非`Web`应用程序
 
+
+
 ## 10.`SpringBoot`与拦截器`Interceptor`
+
+
 
 ## 11.`SpringBoot`与`Servlet`
 
+
+
 ## 12.`SpringBoot`与过滤器`Filter`
+
+
 
 ## 13.`SpringBoot`打包与部署
 
+
+
 ## 14.`SpringBoot`集成`logback`
+

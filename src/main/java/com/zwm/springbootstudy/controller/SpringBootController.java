@@ -9,10 +9,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @RequestMapping(value = "/springboot")
 public class SpringBootController {
 
-    @Value("${school.name}")
+    //@Value("${school.name}")
     private String schoolName;
 
-    @Value("${website}")
+    //@Value("${website}")
     private String website;
 
     @RequestMapping(value = "/say")
