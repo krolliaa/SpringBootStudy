@@ -337,28 +337,299 @@ public class SpringBootController1 {
 
 如果在`properties`中设置的对象属性值是中文则会出现乱，这时候需要在编译的时候先转化为`ASCII`码然后按住：`ctrl + alt + s`===>`Editor`===>`File Encodings` ===>勾选`Transparent native-to-ascii conversion`，然后需要把原目录的`application.properties`删除然后重新建一个最后重启项目【此步骤必须得做否则还是乱码】此时再次访问`http://localhost:8080/springboot/say1`可以正常显示中文
 
-## 3. `SpringBoot`集成`JSP`
+## 3.`SpringBoot`集成`MyBatis`
 
-## 4.`SpringBoot`集成`MyBatis`
+引入依赖：`mybatis-spring-boot-starter`和`mysql-connector-java`【版本可改】
 
-## 5.`SpringBoot`集成`Transaction`
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.zwm</groupId>
+    <artifactId>SpringBootStudy</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>SpringBootStudy</name>
+    <description>SpringBootStudy</description>
 
-## 6.`SpringBoot`集成`SpringMVC`
+    <properties>
+        <java.version>1.8</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <spring-boot.version>2.3.7.RELEASE</spring-boot.version>
+    </properties>
 
-## 7.`SpringBoot`集成`Restful`
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.junit.vintage</groupId>
+                    <artifactId>junit-vintage-engine</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-starter</artifactId>
+            <version>2.2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mybatis</groupId>
+            <artifactId>mybatis</artifactId>
+            <version>3.5.7</version>
+        </dependency>
+    </dependencies>
 
-## 8.`SpringBoot`集成`Redis`
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
-## 9.`SpringBoot`集成`Dubbo`
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/java</directory>
+                <includes>
+                    <include>**/*.properties</include>
+                    <include>**/*.xml</include>
+                </includes>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>2.3.7.RELEASE</version>
+                <configuration>
+                    <mainClass>com.zwm.springbootstudy.SpringBootStudyApplication</mainClass>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>repackage</id>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+```
 
-## 10.`SpringBoot`与非`Web`应用程序
+配置`application.properties`：
 
-## 11.`SpringBoot`与拦截器`Interceptor`
+```properties
+# 应用名称
+spring.application.name=SpringBootStudy
+server.port=8080
+server.servlet.context-path=/
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.datasource.url=jdbc:mysql://localhost:3306/springboot?useSSL=false&serverTimezone=Asia/Shanghai
+spring.datasource.username=root
+spring.datasource.password=123456
+school.name=SCUT
+website=https://www.scut.edu.cn
+project.name=ssm项目
+project.website=https://www.ssm.com.cn
+mybatis.type-aliases-package=com.zwm.springbootstudy.pojo
+mybatis.mapper-locations=classpath:mapper/*.xml
+mybatis.configuration.log-impl=org.apache.ibatis.logging.stdout.StdOutImpl
+```
 
-## 12.`SpringBoot`与`Servlet`
+`pojo.Student`：
 
-## 13.`SpringBoot`与过滤器`Filter`
+```java
+package com.zwm.springbootstudy.pojo;
 
-## 14.`SpringBoot`打包与部署
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.stereotype.Component;
 
-## 15.`SpringBoot`集成`logback`
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Component(value = "student")
+public class Student {
+    private Integer id;
+    private String name;
+    private Integer age;
+
+    @Override
+    public String toString() {
+        return "Student{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", age=" + age +
+                '}';
+    }
+}
+```
+
+`mapper`层以及`mapper`相关`xml`配置【`SQL`语句】：
+
+```java
+package com.zwm.springbootstudy.mapper;
+
+import com.zwm.springbootstudy.pojo.Student;
+import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
+
+@Mapper
+public interface StudentMapper {
+    public abstract List<Student> selectAllStudents();
+}
+```
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zwm.springbootstudy.mapper.StudentMapper">
+    <sql id="base_select_column">id, name, age</sql>
+    <select id="selectAllStudents" resultType="student">
+        select <include refid="base_select_column"/> from student
+    </select>
+</mapper>
+```
+
+`service`层：
+
+```java
+package com.zwm.springbootstudy.service;
+
+import com.zwm.springbootstudy.mapper.StudentMapper;
+import com.zwm.springbootstudy.pojo.Student;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class StudentService {
+
+    @Autowired
+    private StudentMapper studentMapper;
+
+    public List<Student> getAllStudents() {
+        return studentMapper.selectAllStudents();
+    }
+}
+```
+
+`controller`层：
+
+```java
+package com.zwm.springbootstudy.controller;
+
+import com.zwm.springbootstudy.pojo.Student;
+import com.zwm.springbootstudy.service.StudentService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import java.util.List;
+
+@Controller(value = "springBootController2")
+@RequestMapping(value = "/springboot")
+public class SpringBootController2 {
+
+    @Autowired
+    private StudentService studentService;
+
+    @RequestMapping(value = "/getAllStudents")
+    @ResponseBody
+    public List<Student> getAllStudents() {
+        return studentService.getAllStudents();
+    }
+}
+```
+
+启动项目输入地址测试：`http://localhost:8080/springboot/getAllStudents`：
+
+```javascript
+[
+	{
+		"id": 1,
+		"name": "kroll",
+		"age": 18
+	},
+	{
+		"id": 2,
+		"name": "steven",
+		"age": 26
+	},
+	{
+		"id": 3,
+		"name": "jack",
+		"age": 26
+	}
+]
+```
+
+## 4.`SpringBoot`集成`Transaction`
+
+## 5.`SpringBoot`集成`SpringMVC`
+
+## 6.`SpringBoot`集成`Restful`
+
+## 7.`SpringBoot`集成`Redis`
+
+## 8.`SpringBoot`集成`Dubbo`
+
+## 9.`SpringBoot`与非`Web`应用程序
+
+## 10.`SpringBoot`与拦截器`Interceptor`
+
+## 11.`SpringBoot`与`Servlet`
+
+## 12.`SpringBoot`与过滤器`Filter`
+
+## 13.`SpringBoot`打包与部署
+
+## 14.`SpringBoot`集成`logback`
