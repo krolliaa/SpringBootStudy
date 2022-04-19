@@ -693,7 +693,74 @@ public class SpringBootController3 {
 
 ## 6.`SpringBoot`集成`Restful`
 
+通俗地理解`Restful`就是统一接口+路径变量+简化参数，只要符合`Rest`原则就使用了`Restful`架构，可以参考下面这个案例：使用`Restful`架构模拟对`springboot`数据库中的`student`表做一次完整的增删改查操作，然后可以使用`postman`进行接口测试
 
+```java
+package com.zwm.springbootstudy.controller;
+
+import org.springframework.web.bind.annotation.*;
+
+@RestController(value = "springBootController4")
+@RequestMapping(value = "/springboot")
+public class SpringBootController4 {
+    @PostMapping(value = "/student/{id}/{name}/{age}")
+    public String addStudent(@PathVariable("id") Integer id, @PathVariable("name") String name, @PathVariable("age") Integer age) {
+        return "添加 id 为：" + id + " 姓名为：" + name + " 年龄为：" + age + " 的学生";
+    }
+
+    @DeleteMapping(value = "/student/{id}")
+    public String deleteStudent(@PathVariable("id") Integer id) {
+        return "删除 id 为：" + id + " 的学生";
+    }
+
+    @PutMapping(value = "/student/{id}/{name}/{age}")
+    public String updateStudent(@PathVariable("id") Integer id, @PathVariable("name") String name, @PathVariable("age") Integer age) {
+        return "修改 id 为：" + id + " 的学生姓名为：" + name + " 年龄为：" + age;
+    }
+
+    @GetMapping(value = "/student/{id}")
+    public String selectStudent(@PathVariable("id") Integer id) {
+        return "获取 id 为：" + id + " 的学生";
+    }
+}
+```
+
+说说如果不注意的话可能会产生`Restful`的请求冲突，比如下面这种，虽然我们写着的是`id status`第二个是`status id`，但是因为传递的都是`Integer`类型的属性所以根本无法知道到底前端传递的数据会调用哪个控制器方法，就会导致报错无法正常返回数据，解决的方式有两种：
+
+> 1. 更改请求地址
+> 2. 更改请求方式
+
+```java
+@GetMapping("/springboot/{id}/order/{status}")
+public Object queryOrder1(@PathVariable("id") Integer id, @PathVariable("status") Integer status) {
+    Map<String, Object> resultMap = new HashMap<>();
+    resultMap.put("id", id);
+    resultMap.put("status", status);
+    return resultMap;
+}
+/**
+ * 查询数据
+ * 请求方式：GET
+ * 请求地址：localhost:9090/springboot/1001/order/1
+ *
+ * @param id
+ * @param status
+ * @return
+ */
+@GetMapping("/springboot/{status}/order/{id}")
+public Object queryOrder2(@PathVariable("id") Integer id,
+                          @PathVariable("status") Integer status) {
+    Map<String, Object> resultMap = new HashMap<>();
+    resultMap.put("id", id);
+    resultMap.put("status", status);
+    return resultMap;
+}
+```
+
+除此之外，使用`Reftful`架构有两条原则需要遵守：
+
+> 1. 请求路径不要出现动词，最好是直接名词的方式呈现
+> 2. 分页、排序这些操作不要使用斜杠的方式传递参数而是使用`xxx?page=1&sort=desc`这种方式
 
 ## 7.`SpringBoot`集成`Redis`
 
