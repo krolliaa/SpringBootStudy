@@ -8,4 +8,6 @@ import java.util.List;
 @Mapper
 public interface StudentMapper {
     public abstract List<Student> selectAllStudents();
+
+    public abstract Integer selectAllStudentsCount();
 }

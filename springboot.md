@@ -764,27 +764,547 @@ public Object queryOrder2(@PathVariable("id") Integer id,
 
 ## 7.`SpringBoot`集成`Redis`
 
+完善根据`id`查询学生的功能，先从`Redis`缓存中查询数据如果找不到就先去数据库中查询然后放到`redis`缓存中，这样下次查询的时候就可以从`Redis`中查询了。
 
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-redis</artifactId>
+</dependency>
+```
+
+```java
+package com.zwm.springbootstudy.mapper;
+
+import com.zwm.springbootstudy.pojo.Student;
+import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
+
+@Mapper
+public interface StudentMapper {
+    public abstract List<Student> selectAllStudents();
+
+    public abstract Integer selectAllStudentsCount();
+}
+```
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zwm.springbootstudy.mapper.StudentMapper">
+    <sql id="base_select_column">id
+    , name, age</sql>
+    <select id="selectAllStudents" resultType="student">
+        select
+        <include refid="base_select_column"/>
+        from student
+    </select>
+    <select id="selectAllStudentsCount" resultType="java.lang.Integer">
+        select count(*) from student
+    </select>
+</mapper>
+```
+
+```java
+package com.zwm.springbootstudy.service;
+
+import com.zwm.springbootstudy.mapper.StudentMapper;
+import com.zwm.springbootstudy.pojo.Student;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+@Service
+public class StudentService {
+
+    @Autowired
+    private StudentMapper studentMapper;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
+
+    @Transactional
+    public List<Student> getAllStudents() {
+        return studentMapper.selectAllStudents();
+    }
+
+    //查询所有学生数量
+    public Integer queryAllStudentsCount() {
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        Integer allStudentsCount = (Integer) redisTemplate.opsForValue().get("allStudentsCount");
+        if (null == allStudentsCount) {
+            allStudentsCount = studentMapper.selectAllStudentsCount();
+            redisTemplate.opsForValue().set("allStudentsCount", allStudentsCount, 15, TimeUnit.SECONDS);
+        }
+        return allStudentsCount;
+    }
+}
+```
+
+```java
+package com.zwm.springbootstudy.controller;
+
+import com.zwm.springbootstudy.service.StudentService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController(value = "springBootController5")
+@RequestMapping(value = "/springboot")
+public class SpringBootController5 {
+    @Autowired
+    private StudentService studentService;
+
+    @GetMapping(value = "/getAllStudentsCount")
+    public String AllStudentsCount() {
+        Integer allStudentsCount = studentService.queryAllStudentsCount();
+        return "学生总人数：" + allStudentsCount;
+    }
+}
+```
+
+启动项目，浏览器访问：`http://localhost:8080/springboot/getAllStudentsCount`即可，因为在`application.properties`加入了`mybatis.configuration.log-impl=org.apache.ibatis.logging.stdout.StdOutImpl`，所以访问数据库的时候都可以在终端看到有`SQL`语句的输出，如果没有访问数据库则没有`SQL`语句的输出，依次可以判断访问的是`Redis`
 
 ## 8.`SpringBoot`集成`Dubbo`
 
-
+公司电脑太。。。，回家搞
 
 ## 9.`SpringBoot`与非`Web`应用程序
 
+非`Web`应用程序这里指的是纯`Java`程序，有两种实现方式：
 
+1. 直接在`xxxApplication.java`中使用`SpringApplication.run()`方法获取返回的`Spring`容器对象，再获取业务`bean`进行调用。`SpringBoot`程序启动之后将返回`ConfigurableApplicationContext`对象，相当于之前在`Spring`学习的：`ApplicationContext applicationContext = new ClassPathXmlApplicationContext("")`。
+
+   ```java
+   package com.zwm.springbootstudy;
+   
+   import com.zwm.springbootstudy.service.StudentService;
+   import org.springframework.boot.SpringApplication;
+   import org.springframework.boot.autoconfigure.SpringBootApplication;
+   import org.springframework.context.ConfigurableApplicationContext;
+   import org.springframework.transaction.annotation.EnableTransactionManagement;
+   
+   @SpringBootApplication
+   @EnableTransactionManagement
+   public class SpringBootStudyApplication {
+       public static void main(String[] args) {
+           ConfigurableApplicationContext configurableApplicationContext = SpringApplication.run(SpringBootStudyApplication.class, args);
+           StudentService studentService = (StudentService) configurableApplicationContext.getBean("studentService");
+           System.out.println(studentService.queryAllStudentsCount());
+       }
+   }
+   ```
+
+2. 如果需要预先加载一些东西可以使用`CommandLineRunner`接口：
+
+   ```java
+   package com.zwm.springbootstudy;
+   
+   import com.zwm.springbootstudy.service.StudentService;
+   import org.springframework.beans.factory.annotation.Autowired;
+   import org.springframework.boot.CommandLineRunner;
+   import org.springframework.boot.SpringApplication;
+   import org.springframework.boot.autoconfigure.SpringBootApplication;
+   import org.springframework.transaction.annotation.EnableTransactionManagement;
+   
+   @SpringBootApplication
+   @EnableTransactionManagement
+   public class SpringBootStudyApplication implements CommandLineRunner {
+   
+       @Autowired
+       private StudentService studentService;
+   
+       public static void main(String[] args) {
+           //ConfigurableApplicationContext configurableApplicationContext = SpringApplication.run(SpringBootStudyApplication.class, args);
+           //StudentService studentService = (StudentService) configurableApplicationContext.getBean("studentService");
+           //System.out.println(studentService.queryAllStudentsCount());
+           SpringApplication.run(SpringBootStudyApplication.class, args);
+       }
+   
+       public void run(String... args) throws Exception {
+           System.out.println(studentService.queryAllStudentsCount());
+       }
+   }
+   ```
+
+题外话：可以看到启动`SpringBoot`的时候会有一个`Logo`，有时候不想看到这个`Logo`可以将其关掉。
+
+```java
+package com.zwm.springbootstudy;
+
+import com.zwm.springbootstudy.service.StudentService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.Banner;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+
+@SpringBootApplication
+@EnableTransactionManagement
+public class SpringBootStudyApplication implements CommandLineRunner {
+
+    @Autowired
+    private StudentService studentService;
+
+    public static void main(String[] args) {
+        //ConfigurableApplicationContext configurableApplicationContext = SpringApplication.run(SpringBootStudyApplication.class, args);
+        //StudentService studentService = (StudentService) configurableApplicationContext.getBean("studentService");
+        //System.out.println(studentService.queryAllStudentsCount());
+        SpringApplication springApplication = new SpringApplication(SpringBootStudyApplication.class);
+        springApplication.setBannerMode(Banner.Mode.OFF);
+        springApplication.run(args);
+        //SpringApplication.run(SpringBootStudyApplication.class, args);
+    }
+
+    public void run(String... args) throws Exception {
+        System.out.println(studentService.queryAllStudentsCount());
+    }
+}
+```
+
+当然你还可以更换`Logo`，可以到`https://www.bootschool.net/ascii`制作生成`banner.txt`然后将`banner.txt`放到`resources`目录下即可：
+
+```java
+@@@@@@@@ @@@@@@@@ @@@@@@@   @@@@@@   @@@@@@@  @@@@@@   @@@@@@  @@@
+     @@! @@!      @@!  @@@ @@!  @@@ !@@      @@!  @@@ @@!  @@@ @@!
+   @!!   @!!!:!   @!@!!@!  @!@  !@! !@!      @!@  !@! @!@  !@! @!!
+ !!:     !!:      !!: :!!  !!:  !!! :!!      !!:  !!! !!:  !!! !!:  
+```
 
 ## 10.`SpringBoot`与拦截器`Interceptor`
 
+拦截器这位兄弟在`SpringMVC`就见过了，当时使用的是`XML`进行配置的，现在使用`SpringBoot`可以不用`XML`而使用的是拦截器实现类：`WebMvcConfigurer`来替换掉配置文件：`com.zwm.config.InterceptorConfig ---> Configurer`是配置者的意思：
 
+```java
+package com.zwm.springbootstudy.handler.interceptor;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class InterceptorConfig implements WebMvcConfigurer {
+    public void addInterceptors(InterceptorRegistry registry) {
+        //定义拦截路径
+        String[] addPathPatterns = {"/user/**"};
+        //定义不拦截的路径
+        String[] excludePathPatterns = {"/user/login", "/user/error"};
+        //注册拦截器 ---> 首先你得有一个拦截器：创建拦截器 SpringBootInterceptor
+        registry.addInterceptor(new SpringBootInterceptor()).addPathPatterns(addPathPatterns).excludePathPatterns(excludePathPatterns);
+    }
+}
+```
+
+拦截器：
+
+```java
+package com.zwm.springbootstudy.handler.interceptor;
+
+import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.ModelAndView;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+public class SpringBootInterceptor implements HandlerInterceptor {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        System.out.println("--------编写拦截规则-------");
+        Integer code = (Integer) request.getSession().getAttribute("code");
+        if (null == code) {
+            response.sendRedirect(request.getContextPath() + "/springboot/error");
+            return false;
+        }
+        return true;
+    }
+
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+
+    }
+
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+    }
+}
+```
+
+控制器：
+
+```java
+package com.zwm.springbootstudy.controller;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import javax.servlet.http.HttpServletRequest;
+
+@RestController
+@RequestMapping(value = "/user")
+public class SpringBootController6 {
+    @GetMapping(value = "/account")
+    public Object queryAccount() {
+        return "帐户可用余额：897213445元";
+    }
+
+    @GetMapping(value = "/login")
+    public Object verifyRealName(HttpServletRequest request) {
+        request.getSession().setAttribute("code", 0);
+        return "用户实名认证成功";
+    }
+
+    @RequestMapping(value = "/error")
+    public Object error() {
+        return "用户没有实名认证";
+    }
+}
+```
+
+如果没有登录也就是`code == null`跳转至`error`，无法访问账户`/user/account`。
 
 ## 11.`SpringBoot`与`Servlet`
 
+创建`Servlet`有多种方式，第一种：注解方式
 
+```java
+package com.zwm.springbootstudy.service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zwm.springbootstudy.pojo.Student;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+
+@WebServlet("/servlet/one")
+public class ServletOne extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        Student student = new Student(1, "smith", 3);
+        ObjectMapper objectMapper = new ObjectMapper();
+        String studentJson = objectMapper.writeValueAsString(student);
+        PrintWriter printWriter = resp.getWriter();
+        printWriter.write(studentJson);
+        printWriter.flush();
+        printWriter.close();
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        this.doGet(req, resp);
+    }
+}
+```
+
+然后需要在主文件中加入扫描`Servlet`注解的注解`@ServletComponentScan`：
+
+```java
+package com.zwm.springbootstudy;
+
+import com.zwm.springbootstudy.service.StudentService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.Banner;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.web.servlet.ServletComponentScan;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+
+@SpringBootApplication
+@EnableTransactionManagement
+@ServletComponentScan(basePackages = {"com.zwm.springbootstudy.service"})
+public class SpringBootStudyApplication implements CommandLineRunner {
+
+    @Autowired
+    private StudentService studentService;
+
+    public static void main(String[] args) {
+        //ConfigurableApplicationContext configurableApplicationContext = SpringApplication.run(SpringBootStudyApplication.class, args);
+        //StudentService studentService = (StudentService) configurableApplicationContext.getBean("studentService");
+        //System.out.println(studentService.queryAllStudentsCount());
+        //SpringApplication springApplication = new SpringApplication(SpringBootStudyApplication.class);
+        //springApplication.setBannerMode(Banner.Mode.LOG);
+        //springApplication.run(args);
+        SpringApplication.run(SpringBootStudyApplication.class, args);
+    }
+
+    public void run(String... args) throws Exception {
+        System.out.println(studentService.queryAllStudentsCount());
+    }
+}
+```
+
+第二种方法：
+
+```java
+package com.zwm.springbootstudy.handler;
+
+import com.zwm.springbootstudy.service.ServletTwo;
+import org.springframework.boot.web.servlet.ServletRegistrationBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class ServletConfig {
+    @Bean
+    public ServletRegistrationBean myServletRegistrationBean() {
+        ServletRegistrationBean servletRegistrationBean = new ServletRegistrationBean(new ServletTwo(), "/servlet/two");
+        return servletRegistrationBean;
+    }
+}
+```
+
+```java
+package com.zwm.springbootstudy.service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zwm.springbootstudy.pojo.Student;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+
+public class ServletTwo extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        Student student = new Student(2, "smith", 8);
+        ObjectMapper objectMapper = new ObjectMapper();
+        String studentJson = objectMapper.writeValueAsString(student);
+        PrintWriter printWriter = resp.getWriter();
+        printWriter.write(studentJson);
+        printWriter.flush();
+        printWriter.close();
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        this.doGet(req, resp);
+    }
+}
+```
 
 ## 12.`SpringBoot`与过滤器`Filter`
 
+第一种：注解方式
 
+```java
+package com.zwm.springbootstudy.service;
+
+import javax.servlet.*;
+import javax.servlet.annotation.WebServlet;
+import java.io.IOException;
+
+@WebServlet(urlPatterns = "/filter/one")
+public class FilterOne implements Filter {
+    public void init(FilterConfig filterConfig) throws ServletException {
+        System.out.println("初始化过滤器");
+    }
+
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+        System.out.println("进入第一个过滤器");
+        filterChain.doFilter(servletRequest, servletResponse);
+    }
+
+    public void destroy() {
+        System.out.println("销毁过滤器");
+    }
+}
+```
+
+```java
+package com.zwm.springbootstudy;
+
+import com.zwm.springbootstudy.service.StudentService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.Banner;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.web.servlet.ServletComponentScan;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+
+@SpringBootApplication
+@EnableTransactionManagement
+@ServletComponentScan(basePackages = {"com.zwm.springbootstudy.service"})
+public class SpringBootStudyApplication implements CommandLineRunner {
+
+    @Autowired
+    private StudentService studentService;
+
+    public static void main(String[] args) {
+        //ConfigurableApplicationContext configurableApplicationContext = SpringApplication.run(SpringBootStudyApplication.class, args);
+        //StudentService studentService = (StudentService) configurableApplicationContext.getBean("studentService");
+        //System.out.println(studentService.queryAllStudentsCount());
+        //SpringApplication springApplication = new SpringApplication(SpringBootStudyApplication.class);
+        //springApplication.setBannerMode(Banner.Mode.LOG);
+        //springApplication.run(args);
+        SpringApplication.run(SpringBootStudyApplication.class, args);
+    }
+
+    public void run(String... args) throws Exception {
+        System.out.println(studentService.queryAllStudentsCount());
+    }
+}
+```
+
+同样也可以使用配置类的方式进行配置：
+
+```java
+package com.zwm.springbootstudy;
+
+import com.zwm.springbootstudy.service.FilterTwo;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class FilterConfig {
+    @Bean
+    public FilterRegistrationBean myFilterRegistrationBean() {
+        String[] urlPatterns = {"/filter/two"};
+        FilterRegistrationBean filterRegistrationBean = new FilterRegistrationBean(new FilterTwo());
+        filterRegistrationBean.addUrlPatterns(urlPatterns);
+        return filterRegistrationBean;
+    }
+}
+```
+
+```java
+package com.zwm.springbootstudy.service;
+
+import javax.servlet.*;
+import javax.servlet.annotation.WebFilter;
+import java.io.IOException;
+
+public class FilterTwo implements Filter {
+    public void init(FilterConfig filterConfig) throws ServletException {
+        System.out.println("初始化过滤器");
+    }
+
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+        System.out.println("进入第二个过滤器");
+        filterChain.doFilter(servletRequest, servletResponse);
+    }
+
+    public void destroy() {
+        System.out.println("销毁过滤器");
+    }
+}
+```
 
 ## 13.`SpringBoot`打包与部署
 
