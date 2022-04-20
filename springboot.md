@@ -1306,9 +1306,51 @@ public class FilterTwo implements Filter {
 }
 ```
 
-## 13.`SpringBoot`打包与部署
+配置文件方式配置`CharacterEncodingFilter`[需要关闭`application.properties`中的`spring.http.encoding.enabled=false` ]：
 
+```java
+package com.zwm.springbootstudy;
 
+import com.zwm.springbootstudy.service.FilterTwo;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.filter.CharacterEncodingFilter;
 
-## 14.`SpringBoot`集成`logback`
+@Configuration
+public class FilterConfig {
+    @Bean
+    public FilterRegistrationBean myFilterRegistrationBean() {
+        //String[] urlPatterns = {"/filter/two"};
+        FilterRegistrationBean filterRegistrationBean = new FilterRegistrationBean(new FilterTwo());
+        //filterRegistrationBean.addUrlPatterns(urlPatterns);
+        CharacterEncodingFilter characterEncodingFilter = new CharacterEncodingFilter();
+        characterEncodingFilter.setEncoding("utf-8");
+        characterEncodingFilter.setForceEncoding(true);
+        filterRegistrationBean.setFilter(characterEncodingFilter);
+        filterRegistrationBean.addUrlPatterns("/*");
+        return filterRegistrationBean;
+    }
+}
+```
+
+当然也可以不用配置文件式的配置，直接配置`application.properties`：
+
+```properties
+spring.http.encoding.enabled=true
+spring.http.encoding.force=true
+spring.http.encoding.charset=utf-8
+```
+
+## 13.`SpringBoot`集成`logback`
+
+配置`pom.xml`即可：
+
+```xml
+<dependency>
+	<groupId>org.springframework.boot</groupId>
+	<artifactId>spring-boot-devtools</artifactId>
+	<optional>true</optional>
+</dependency>
+```
 
